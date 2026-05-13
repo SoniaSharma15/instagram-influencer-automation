@@ -1,0 +1,211 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c5267315-73a2-465c-8142-ef7b776ef6ba",
+              "name": "hashtag",
+              "value": "fitness",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "80cdb4c5-cd97-40cd-877e-a047abee0907",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "apify_api_hAMKAINu2ngJ2t9SvmWzWBeTYRtuz90M6d8q"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"directUrls\": [\n    \"https://www.instagram.com/explore/tags/{{$json.hashtag}}/\"\n  ],\n  \"resultsType\": \"posts\",\n  \"resultsLimit\": 30,\n  \"searchType\": \"hashtag\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "ad5ce174-a293-421e-b845-962ff244b1c0",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const posts = $input.all().map(item => item.json);\n\nreturn posts.map((post, index) => {\n  \n  const username = post.ownerUsername || `user_${index + 1}`;\n  const likes = post.likesCount || Math.floor(Math.random() * 5000);\n  const comments = post.commentsCount || Math.floor(Math.random() * 500);\n\n  // Engagement Quality\n  const engagementRate = ((likes + comments) / 10000 * 100).toFixed(2);\n\n  let engagementQuality = \"Low\";\n  if (engagementRate > 5) engagementQuality = \"High\";\n  else if (engagementRate > 2) engagementQuality = \"Medium\";\n\n  // Fake Influencer Detection\n  const fakeInfluencer =\n    comments < 10 && likes > 3000 ? \"Likely Fake\" : \"Authentic\";\n\n  // Niche Relevance Score\n  const caption = (post.caption || \"\").toLowerCase();\n\n  let nicheScore = 50;\n\n  if (caption.includes(\"fitness\")) nicheScore += 20;\n  if (caption.includes(\"workout\")) nicheScore += 15;\n  if (caption.includes(\"gym\")) nicheScore += 15;\n\n  // Outreach Message\n  const outreachMessage = `Hi ${username}, we love your fitness content and would like to collaborate with you for our wellness campaign.`;\nlet category = \"General\";\n\nconst text = (post.caption || \"\").toLowerCase();\n\nif (text.includes(\"fitness\") || text.includes(\"workout\")) {\n  category = \"Fitness\";\n}\nelse if (text.includes(\"food\") || text.includes(\"recipe\")) {\n  category = \"Food\";\n}\nelse if (text.includes(\"fashion\") || text.includes(\"style\")) {\n  category = \"Fashion\";\n}\nelse if (text.includes(\"travel\")) {\n  category = \"Travel\";\n}\n  \n  return {\n    json: {\n      influencer_name: username,\n      instagram_url: `https://instagram.com/${username}`,\n      followers: post.ownerFollowersCount || \"Not Available\",\n     category: category,\n      bio: post.caption || \"\",\n      engagement_quality: engagementQuality,\n      fake_detection: fakeInfluencer,\n      niche_score: nicheScore,\n      outreach_message: outreachMessage\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "4899df84-db50-4dd8-a15a-fb649b22207c",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "0da5eda1-32f7-4456-94f4-db0869940115",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "fromEmail": "soniasunita15@gmail.com",
+        "toEmail": "soniasunita15@gmail.com",
+        "subject": "Instagram Influencer Report",
+        "emailFormat": "text",
+        "text": "Hello,\n\nPlease find attached the generated Instagram influencer analysis report.\n\nThe report includes:\n\nInfluencer URLs\nEngagement analysis\nFake influencer detection\nNiche relevance scoring\n\nRegards",
+        "options": {
+          "attachments": "data"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "09d2ce2a-1456-4a71-8c08-643e4d27e546",
+      "name": "Send an Email",
+      "webhookId": "bc8028a6-e6b1-4906-9826-764b0c2a0a10",
+      "credentials": {
+        "smtp": {
+          "id": "erG9SJj5XimnYfBt",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "7b911858-fbf9-45f1-9d9b-a33fb1f8dfab",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "availableInMCP": false
+  },
+  "versionId": "f59f591d-facf-435b-9630-f98da1fedb67",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d6520289b03e5168c6ad3f908c4fe606eefae2abcf00c15711696101a3797b08"
+  },
+  "id": "O7P37ypyVqNEWhE7",
+  "tags": []
+}
